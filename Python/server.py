@@ -3,26 +3,55 @@ import asyncio
 import cv2
 import numpy as np
 
+clients = {}
+
+def show_video(client_id, frame):
+    window_name = f"Client {client_id}"
+    cv2.imshow(window_name, frame)
+
+    if cv2.waitKey(33) == ord('q'):
+        print("disconnect:", client_id)
+        cv2.destroyAllWindows()
+        return 1
+
 async def receive_video(websockets, path):
     print("connected!")
-    while True:
-        data = await websockets.recv()
-        frame = np.frombuffer(data, dtype=np.uint8)
-        frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
+    print(websockets.remote_address)
 
-        cv2.imshow("Received Frame", frame)
+    client_id = id(websockets)
+    clients[client_id] = websockets
 
-        if cv2.waitKey(33) == ord('q'):
-            cv2.destroyAllWindows()
-            break
+    print("client connected:", client_id)
 
-async def hello(websocket, path):
-    name = await websocket.recv()
-    print(f"< {name}")
+    try:
+        while True:
+            data = await websockets.recv()
+            frame = np.frombuffer(data, dtype=np.uint8)
+            frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
-    greeting = f"Hello! {name}!"
-    await websocket.send(greeting)
-    print(f"> {greeting}")
+            if show_video(client_id, frame) == 1:
+                break
+
+            
+    except websockets.ConnectionClosedOK:
+        print("cat")
+        del clients[client_id]
+
+
+
+    # while True:
+    #     data = await websockets.recv()
+    #     frame = np.frombuffer(data, dtype=np.uint8)
+    #     frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
+
+    #     cv2.imshow("Received Frame", frame)
+    #     # cv2.imshow("222", frame)
+
+    #     if cv2.waitKey(33) == ord('q'):
+    #         print("disconnect:", websockets.remote_address[1])
+    #         cv2.destroyAllWindows()
+    #         break
+
 
 # start_server = websockets.serve(hello, "localhost", 8000)
 
