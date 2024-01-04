@@ -8,11 +8,7 @@ clients = {}
 def show_video(client_id, frame):
     window_name = f"Client {client_id}"
     cv2.imshow(window_name, frame)
-
-    if cv2.waitKey(33) == ord('q'):
-        print("disconnect:", client_id)
-        cv2.destroyAllWindows()
-        return 1
+    cv2.waitKey(1)
 
 async def receive_video(websockets, path):
     print("connected!")
@@ -29,12 +25,11 @@ async def receive_video(websockets, path):
             frame = np.frombuffer(data, dtype=np.uint8)
             frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
-            if show_video(client_id, frame) == 1:
-                break
+            show_video(client_id, frame)
 
             
     except websockets.ConnectionClosedOK:
-        print("cat")
+        print("cat1")
         del clients[client_id]
 
 
