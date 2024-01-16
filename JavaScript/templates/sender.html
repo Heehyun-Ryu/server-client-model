@@ -1,0 +1,44 @@
+<!-- templates/streaming_webrtc.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Streaming with WebRTC</title>
+</head>
+<body>
+
+    <h1>Webcam Streaming with WebRTC</h1>
+
+    <video id="localVideo" width="720" height="480" autoplay></video>
+    <button id="startButton">Start Streaming</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <script>
+        const socket = io.connect('http://127.0.0.1:5000');
+
+        const localVideo = document.getElementById('localVideo');
+        const startButton = document.getElementById('startButton');
+
+        let localStream;
+
+        startButton.addEventListener('click', () => {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    console.log(stream);
+                    localStream = stream;
+                    localVideo.srcObject = stream;
+                    socket.emit('start_streaming', stream);
+                })
+                .catch((error) => {
+                    console.error('Error accessing the camera:', error);
+                });
+        });
+    </script>
+
+</body>
+</html>
