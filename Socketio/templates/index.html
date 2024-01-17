@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Video Streaming</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+<body>
+    <img id="video_feed" width="640" height="480">
+    <script>
+        var socket = io.connect('http://192.168.0.44:8080');
+
+        socket.on('connect', function () {
+            console.log('connect server!');
+        });
+
+        socket.on('disconncet', function () {
+            console.log('disconnect server!');
+        });
+
+        socket.on('draw', function (data) {
+            document.getElementById('video_feed').src='data:image/jpeg;base64,' + data;
+        });
+    </script>
+
+</body>
+</html>
