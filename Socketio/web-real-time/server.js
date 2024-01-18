@@ -12,6 +12,24 @@ const io = socketio(server);
 
 app.use(express.static('templates'));
 
+
+const clients = {};
+
+io.of('/client').on('connection', (socket) => {
+    clients[socket.id] = true;
+
+    io.of('/client').emit('clientList', Object.keys(clients));
+
+    socket.on('data', (data) => {
+        const base64Image = Buffer.from(data, 'binary').toString('base64');
+        io.emit('draw', base64Image);
+    });
+
+    socket.on('disconnect', () => {
+        io.of('/client').emit('clientList', Object.keys(clients));
+    });
+});
+
 io.on('connection', (socket) => {
     console.log("fuck client in");
 
