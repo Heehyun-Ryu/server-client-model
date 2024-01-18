@@ -31,6 +31,6 @@ def send_video():
 
 
 if __name__ == '__main__':
-    sio.connect('http://192.168.0.44:8080')
+    sio.connect('http://192.168.0.44:8080/a')
     print(sio.sid)
     send_video()
