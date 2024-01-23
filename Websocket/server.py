@@ -8,17 +8,12 @@ import psutil
 import json
 from PIL import Image, ImageDraw, ImageFont
 import datetime
-import schedule, time
-import video_saver
+import schedule
 
 clients = {}
 font = ImageFont.truetype("arial.ttf", 20)
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
-start = True
-record = False
-
-def createDirectory(directory):
+def create_directory(directory):
     try:
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -32,11 +27,13 @@ def memory_usage():
     # [{message}]
 
 async def receive_video(websockets):
-    global start, record
-    def control_video():
-        global record
+    def control_record():
+        nonlocal record, start
         record = False
-        print("!!!!!!!!Control Video!!!!!!!!")
+        start = True
+
+    start = True
+    record = False
 
     file = open('info.json', 'r')
 
@@ -57,10 +54,10 @@ async def receive_video(websockets):
     js = json.load(file)
     file.seek(0)
 
-    schedule.every(int(js['video_time'])).minute.do(video_saver.control_video)
-    # schedule.every(5).seconds.do(control_video)
+    schedule.every(int(js['video_time'])).minute.do(control_record)
+    # schedule.every(5).seconds.do(control_record)
 
-    createDirectory(place)
+    create_directory(place)
 
     try:
         while True:
@@ -96,16 +93,22 @@ async def receive_video(websockets):
 
                 cv2.imshow(str(client_id) + str(place), frame)
 
-                video_saver.save_video(str(place), frame)
+                if start:
+                    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                    video = cv2.VideoWriter(f"{place}/{place}_{nowDatetime_path}video.avi", fourcc, 30, (640, 480))
+                    start = False
+                    record = True
+
+                elif record:
+                    video.write(frame)
 
                 cv2.waitKey(1)
 
                 if cv2.getWindowProperty(str(client_id) + str(place), cv2.WND_PROP_VISIBLE) < 1:
-                    video_saver.control_video()
+                    control_record()
                     break
 
                 schedule.run_pending()
-
 
     except ConnectionClosedOK as e:
         print("ConnectionClosedOK - Client shutting down?\n")
