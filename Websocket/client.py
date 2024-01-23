@@ -17,15 +17,14 @@ async def send_video():
             try:
                 ret, frame = capture.read()
 
+                _, img_encode = cv2.imencode('.jpg', frame)
+
+                await websocket.send(img_encode.tobytes())
+
             except KeyboardInterrupt as e:
                 print("KeyboardInterrupt  - Client shutting down\n")
                 print(e)
                 break
-
-            _, img_encode = cv2.imencode('.jpg', frame)
-
-            try:
-                await websocket.send(img_encode.tobytes())
 
             except ConnectionClosedError as e:
                 print("ConnectionClosedError - Server Shutting down?\n")
