@@ -8,7 +8,6 @@ import psutil
 import json
 from PIL import Image, ImageDraw, ImageFont
 import datetime
-import schedule
 
 clients = {}
 font = ImageFont.truetype("arial.ttf", 20)
@@ -27,9 +26,10 @@ def memory_usage():
     # [{message}]
 
 async def receive_video(websockets):
-    def control_record():
+    async def control_record():
         nonlocal record, start
         record = False
+        video.release()
         start = True
 
     start = True
@@ -54,13 +54,18 @@ async def receive_video(websockets):
     js = json.load(file)
     file.seek(0)
 
-    schedule.every(int(js['video_time'])).minute.do(control_record)
-    # schedule.every(5).seconds.do(control_record)
+    video_time = js['video_time']
 
     create_directory(place)
 
+    start_time = datetime.datetime.now()
+    filename = start_time.strftime('%Y-%m-%d %H_%M_%S')
+
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    video = cv2.VideoWriter(f"{place}/{place}_{filename}.avi", fourcc, 30, (640, 480))
+
     try:
-        while True:
+        while True:/
             now = datetime.datetime.now()
             nowDatetime = now.strftime('%Y-%m-%d %H:%M:%S')
             nowDatetime_path = now.strftime('%Y-%m-%d %H_%M_%S')
@@ -77,7 +82,7 @@ async def receive_video(websockets):
                 file.seek(0)
 
             if data == "None":
-                print("Fuck!")
+                print("Fuck")
 
             else:
                 if js['event'] == '1':
@@ -88,27 +93,28 @@ async def receive_video(websockets):
 
                 frame = Image.fromarray(frame)
                 draw = ImageDraw.Draw(frame)
-                draw.text(xy=(10,5), text= nowDatetime, font=font, fill=(0,0,0))
+                draw.text(xy=(10, 5), text=nowDatetime, font=font, fill=(0, 0, 0))
                 frame = np.array(frame)
 
+
+                current_time = datetime.datetime.now()
+                if (current_time - start_time).total_seconds() >= int(video_time) * 60:
+                    video.release()
+                    start_time = datetime.datetime.now()
+                    filename = start_time.strftime('%Y-%m-%d %H_%M_%S')
+                    video = cv2.VideoWriter(f"{place}/{place}_{filename}.avi", fourcc, 30, (640, 480))
+
+                video.write(frame)
+
                 cv2.imshow(str(client_id) + str(place), frame)
-
-                if start:
-                    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                    video = cv2.VideoWriter(f"{place}/{place}_{nowDatetime_path}video.avi", fourcc, 30, (640, 480))
-                    start = False
-                    record = True
-
-                elif record:
-                    video.write(frame)
 
                 cv2.waitKey(1)
 
                 if cv2.getWindowProperty(str(client_id) + str(place), cv2.WND_PROP_VISIBLE) < 1:
-                    control_record()
+                    video.release()
                     break
 
-                schedule.run_pending()
+                # schedule.run_pending()
 
     except ConnectionClosedOK as e:
         print("ConnectionClosedOK - Client shutting down?\n")
@@ -118,6 +124,7 @@ async def receive_video(websockets):
 
 try:
     start_server = websockets.serve(receive_video, "192.168.0.44", 8000)
+    # start_server = websockets.serve(receive_video, "127.0.0.1", 8000)
     asyncio.get_event_loop().run_until_complete(start_server)
     asyncio.get_event_loop().run_forever()
 
